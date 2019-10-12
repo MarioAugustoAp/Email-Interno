@@ -57,8 +57,41 @@ def createEmail(conn, username): # cria e salva um email. retorna id do mesmo
 	return iD
 
 
-def login(): # faz o login do cliente
+
+def login(name,password,conn): # faz o login do cliente
+
+	if not uniqueValue(name,'username'):#se encontrar usuario, ve se senha eh compativel
+		resultado=compareNamepass(name,password)
+		if resultado:
+			sendMsg("Bem vindo, "+name,conn)
+		else :
+			sendMsg("Nome ou senha errados.",conn)
+	else :
+		sendMsg("Nome de usuário não encontrado.",conn)	
 	pass
+
+def compareNamepass(username,password):#ve se nome corresponde a senha
+	i=0
+	arq = open("regs/username.txt", "r")
+	lines = arq.readlines()
+
+	for line in lines:
+		i=i+1
+		if str(line) == str(username+'\n'):
+			break
+	j=0
+	arq = open("regs/passw.txt", "r")
+	lines = arq.readlines()
+	for line in lines:
+		j=j+1
+		if j == i:
+			if str(line) == str(password+'\n'):
+				return True
+			if str(line) != str(password+'\n'):
+				return False
+	return False
+	pass
+
 
 def register(username, passw): # registra o cliente
 	if not uniqueValue(username, "username"):
@@ -88,8 +121,13 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 		data = recvMsg(conn)
 
 		if data == '1': # fazendo o login do cliente
-			login()
+			sendMsg("Enter your username: ", conn)
+			username = recvMsg(conn)
+			sendMsg("Enter your password: ", conn)
+			passw = recvMsg(conn)
+			login(username, passw, conn)
 			break
+
 
 		if data == '2': # fazendo o registro do cliente
 			sendMsg("Enter a username: ", conn)
