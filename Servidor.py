@@ -27,10 +27,10 @@ def helper(): # printa funções e funcionalidades
 def createId(): # gera novo id unico para email
 	iD = 0
 	while True:
-		iD = random.randint(0,1000000) # maximo 1 milhao de emails no sistema
+		iD = random.randint(0,1000) # maximo de mil emails no sistema
 		if uniqueValue(iD, "id"): # se o id for unico, salva e sai do loop
 			arq = open("regs/id.txt", "a+") # id.txt guarda os ids, serve apenas para checar se um novo id ja existe
-			arq.write(iD+"\n")
+			arq.write(str(iD)+"\n")
 			arq.close()
 			break
 	return iD
@@ -39,21 +39,20 @@ def uniqueValue(var, file): # verifica se um valor é unico(id de mail ou userna
 	arq = open("regs/"+file+".txt", "r")
 	lines = arq.readlines()
 	for line in lines:
-		if str(line) == str(var):
+		if str(line) == str(var)+'\n':
 			return False
 	return True
 
 def createEmail(conn, username): # cria e salva um email. retorna id do mesmo
-	sendMsg("Subject: ", conn)
+	sendMsg("Type Subject: ", conn)
 	title = recvMsg(conn)
-	sendMsg("Message: ", conn)
+	sendMsg("Type Message: ", conn)
 	msg = recvMsg(conn)
-	iD = createiD()
+	iD = createId()
 	email = Email(iD, title, msg, username)
-	serializedEmail = pickle.dumps(email)
-	print(serializedEmail)
-	arq = open("regs/email.txt", "a+")
-	arq.write(serializedEmail+"\n")
+	serializedEmail = pickle.dumps(email) # para salvar o email em um arq usei picke para serializar o objeto
+	arq = open("regs/email.txt", "ab")
+	arq.write(serializedEmail+b"\n")
 	arq.close()
 	return iD
 
@@ -110,29 +109,31 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 
     # laço que receberá os COMANDOS do cliente
 	while True:
+		sendMsg("Waiting command:", conn)
 		data = (recvMsg(conn)).split() # quebra o comando em uma lista
 
-		if data[0] == "show": # mostra email
+		if str(data[0]) == "show": # mostra email
 			pass
-		if data[0] == "send": # enviar email
+		if str(data[0]) == "send": # enviar email
 			pass
-		if data[0] == "email": # criar email
-			pass
-			#iD = createEmail(conn, username) ###### retornar id do email e feedback
+		if str(data[0]) == "email": # criar email
 
-		if data[0] == "del": # deletar email
+			try:
+				iD = createEmail(conn, username)
+				sendMsg("\nE-mail id: "+str(iD), conn)
+			except:
+				sendMsg("\nError. Could not create E-mail.", conn)
+
+		if str(data[0]) == "del": # deletar email
 			pass
 
-		if data[0] == "fav": # marcar como favorito
+		if str(data[0]) == "fav": # marcar como favorito
 			pass
 
-		if data[0] == "help":
+		if str(data[0]) == "help":
 			helper()
  
 		#if data == "show draft": # rascunhos: quando se cria um email e nao envia para ngm
-
-		else :
-			sendMsg("Error: Invalid command.", conn)
 
 		
 		
