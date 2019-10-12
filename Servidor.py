@@ -6,9 +6,20 @@
 #            - ipv4 ou ipv6 (AF_INET ou AF_INET6)
 #       - Tipo:
 #            - TCP OU UDP (SOCK_STREAM ou SOCK_DGRAM)
-import socket, os, random
+import socket, os, random, pickle
 from datetime import date
 from _thread import *
+
+class Email:
+	def __init__(self, iD, title, msg, sender):
+		self.iD = iD
+		self.title = title
+		self.msg = msg
+		self.recipients = []
+		self.sender = sender
+		self.read = 0 # 0 para nao lido
+		self.fav = 0 # 0 para nao favorito
+		self.date = date.today() # data que foi criado o email, year-month-day
 
 def helper(): # printa funções e funcionalidades
 	pass
@@ -24,7 +35,7 @@ def createId(): # gera novo id unico para email
 			break
 	return iD
 
-def uniqueValue(var, file): # verifica se um valor é unico(id ou username), parametro file DEVE ser: "id" ou "username"
+def uniqueValue(var, file): # verifica se um valor é unico(id de mail ou username), parametro file DEVE ser: "id" ou "username"
 	arq = open("regs/"+file+".txt", "r")
 	lines = arq.readlines()
 	for line in lines:
@@ -32,22 +43,26 @@ def uniqueValue(var, file): # verifica se um valor é unico(id ou username), par
 			return False
 	return True
 
-class Email:
-	def __init__(self, title, msg, recipients, sender):
-		self.id = createId()
-		self.title = title
-		self.msg = msg
-		self.recipients = recipients # tem que ser uma lista
-		self.sender = sender
-		self.read = 0 # 0 para nao lido
-		self.fav = 0 # 0 para nao favorito
-		self.date = date.today() # data que foi criado o email, year-month-day
+def createEmail(conn, username): # cria e salva um email. retorna id do mesmo
+	sendMsg("Subject: ", conn)
+	title = recvMsg(conn)
+	sendMsg("Message: ", conn)
+	msg = recvMsg(conn)
+	iD = createiD()
+	email = Email(iD, title, msg, username)
+	serializedEmail = pickle.dumps(email)
+	print(serializedEmail)
+	arq = open("regs/email.txt", "a+")
+	arq.write(serializedEmail+"\n")
+	arq.close()
+	return iD
+
 
 def login(): # faz o login do cliente
 	pass
 
 def register(username, passw): # registra o cliente
-	if uniqueValue(username, "username"):
+	if not uniqueValue(username, "username"):
 		return False  #checa se ja existe o username
 	arq1 = open("regs/username.txt", "a+")
 	arq2 = open("regs/passw.txt", "a+")
@@ -66,6 +81,9 @@ def recvMsg(conn): # recebe mensagem
 
 def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 	sendMsg("\nWelcome user.\n", conn)
+	username = ""
+
+	# laço para o cliente LOGAR
 	while True: # só sairá desse looping se o usuário digitar 1 ou 2
 		sendMsg("\nType 1 to login\nType 2 to register", conn)
 		data = recvMsg(conn)
@@ -88,16 +106,44 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 		else : # se nao receber 1 ou 2, reportar erro
 			sendMsg("Error: Invalid command.", conn)
 
-	helper()
+	helper() # printa os comandos pro cliente
 
+    # laço que receberá os COMANDOS do cliente
 	while True:
-		data = recvMsg(conn)
-		if not data:
-			break
+		data = (recvMsg(conn)).split() # quebra o comando em uma lista
+
+		if data[0] == "show": # mostra email
+			pass
+		if data[0] == "send": # enviar email
+			pass
+		if data[0] == "email": # criar email
+			pass
+			#iD = createEmail(conn, username) ###### retornar id do email e feedback
+
+		if data[0] == "del": # deletar email
+			pass
+
+		if data[0] == "fav": # marcar como favorito
+			pass
+
+		if data[0] == "help":
+			helper()
+ 
+		#if data == "show draft": # rascunhos: quando se cria um email e nao envia para ngm
+
+		else :
+			sendMsg("Error: Invalid command.", conn)
+
+		
+		
 		print(data)
+
 	conn.close()
 
-###### CRIANDO CONEXOES #######
+##################################
+###### CRIANDO AS CONEXOES #######
+##################################
+
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 host = "" 
