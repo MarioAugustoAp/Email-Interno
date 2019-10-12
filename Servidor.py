@@ -9,6 +9,9 @@
 import socket, os
 from _thread import *
 
+def help(): # printa funções e funcionalidades
+	pass
+
 def login():
 	pass
 
@@ -19,7 +22,6 @@ def existUsername(username): # retorna True se o username ja estiver sendo usado
 		if str(line) == str(username):
 			return True
 	return False
-
 
 def register(username, passw): # registra o cliente
 	if existUsername(username):
@@ -32,38 +34,44 @@ def register(username, passw): # registra o cliente
 	arq2.close()
 	return True
 
+def sendMsg(text, conn): # envia mensagem
+	conn.send(text.encode('utf-8'))
 
-def clientthread(conn):
-	while True:
+def recvMsg(conn): # recebe mensagem
+	return (conn.recv(1024)).decode('utf-8')
 
-		msgInicial = "\nWelcome\n\nType 1 to login\nType 2 to register" # primeira msg para cliente
-		conn.send(msgInicial.encode('utf-8'))
-		data = conn.recv(1024)
 
-		if data.decode('utf-8') == '1': # fazendo o login do cliente
+def clientthread(conn): # quando cliente se conecta essa thread é iniciada
+	sendMsg("\nWelcome user.\n", conn)
+	while True: # só sairá desse looping se o usuário digitar 1 ou 2
+		sendMsg("\nType 1 to login\nType 2 to register", conn)
+		data = recvMsg(conn)
+
+		if data == '1': # fazendo o login do cliente
 			login()
 			break
 
-		if data.decode('utf-8') == '2': # fazendo o registro do cliente
-			msg = "Enter a username: "
-			conn.send(msg.encode('utf-8'))
-			username = (conn.recv(1024)).decode('utf-8')
-			msg = "Enter a password: "
-			conn.send(msg.encode('utf-8'))
-			passw = (conn.recv(2014)).decode('utf-8')
+		if data == '2': # fazendo o registro do cliente
+			sendMsg("Enter a username: ", conn)
+			username = recvMsg(conn)
+			sendMsg("Enter a password: ", conn)
+			passw = recvMsg(conn)
 
 			if not register(username, passw):
-				msg = "Username already in use"
-				conn.send(msg.encode('utf-8'))
+				sendMsg("Username already in use", conn)
 				continue
-
 			break
+			
+		else : # se nao receber 1 ou 2, reportar erro
+			sendMsg("Error: Invalid command.", conn)
+
+	help()
 
 	while True:
-		data = conn.recv(1024)
+		data = recvMsg(conn)
 		if not data:
 			break
-		print(data.decode('utf-8'))
+		print(data)
 	conn.close()
 
 
