@@ -25,7 +25,7 @@ class Email:
 
 def helper(conn): # printa funções e funcionalidades
 	sendMsg('\n	System commands:\n',conn)
-	sendMsg('\n	del [id]- Delet an email by id',conn)
+	#sendMsg('\n	del [id]- Delet an email by id',conn)
 	sendMsg('\n	email - Create an email',conn)
 	sendMsg('\n	fav [id]- Mark an email as favorite',conn)
 	sendMsg('\n	show inbox- Show id and subject of inbox',conn)
@@ -263,7 +263,7 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 ###### CRIANDO AS CONEXOES #######
 ##################################
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # quer dizer: socket(ipv4, tcp)
 
 host = "" # rede local
 porta = 8291
