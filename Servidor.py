@@ -10,6 +10,9 @@ import socket, os, random, pickle
 from datetime import date
 from _thread import *
 
+nome=''
+senha=''
+
 class Email:
 	def __init__(self, iD, title, msg, sender):
 		self.iD = iD
@@ -55,7 +58,6 @@ def createEmail(conn, username): # cria e salva um email. retorna id do mesmo
 	arq.write(serializedEmail+b"\n")
 	arq.close()
 	return iD
-
 
 
 def login(name,password,conn): # faz o login do cliente
@@ -138,6 +140,9 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 			if not register(username, passw):
 				sendMsg("Username already in use", conn)
 				continue
+
+			sendMsg("Cadastro feito!",conn)
+			login(username, passw, conn)
 			break
 			
 		else : # se nao receber 1 ou 2, reportar erro
@@ -147,7 +152,7 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 
     # laço que receberá os COMANDOS do cliente
 	while True:
-		sendMsg("Waiting command:", conn)
+		sendMsg("\nWaiting command:", conn)
 		data = (recvMsg(conn)).split() # quebra o comando em uma lista
 
 		if str(data[0]) == "show": # mostra email
@@ -198,5 +203,7 @@ while True: # laco infinito pro servidor fica sempre na escuta
 	
 
 	
+
+
 
 
