@@ -10,7 +10,12 @@ import socket, os, random, pickle
 from datetime import date
 from _thread import *
 
+import os.path
+
 maX = 1000 # maximo de emails no sistema
+
+aux=0
+lidos=[]
 
 class Email:
 	def __init__(self, iD, title, msg, sender):
@@ -76,18 +81,46 @@ def createEmail(conn, username): # cria e salva um email. retorna id do mesmo
 	serializedEmail = pickle.dump(email, open("regs/email.txt", "ab")) 
 	return iD
 
+def addFav(iD):
+	arq = open("regs/fav.txt", "a+")
+	if not isfav(iD):
+		arq.write(str(iD)+'\n')
+		return True
+	return True
+
+def isfav(iD):
+	if os.path.exists("regs/fav.txt"):
+		arq = open("regs/fav.txt", "r")
+		lines = arq.readlines()
+		for line in lines:
+			if str(line) == str(str(iD)+'\n'):
+				return True
+	return False
+
+def isread(emailID):
+	arq =open("regs/lidos.txt",'r')
+	lines = arq.readlines()
+
+	for line in lines:
+		if str(line) == str(str(emailID)+'\n'):
+			return True
+	return False
+	pass
+
 def showCommand(data, conn, username):
 	#show inbox, show notread, show fav, show draft, show sent, show id
-	arq = open("regs/email.txt", "rb")
+	arq = open("regs/email.txt", "rb")	
+
 	try:
 		while True:
 			email = pickle.load(arq) # des-serializa o objeto email
+			
 			if data == 'inbox': # mostra a caixa de entrada
 				if username in email.recipients:
 					sendMsg('e-mail-> id: '+str(email.iD)+'. Subject: '+str(email.title), conn)
 
 			if data == 'fav': # mostra os emails favoritos
-				if (email.fav == 1) and (username in email.recipients):
+				if (username in email.recipients) and isfav(email.iD) :
 					sendMsg('e-mail-> id: '+str(email.iD)+'. Subject: '+str(email.title), conn)
 
 			if data == 'sent': # mostra os emails enviados
@@ -95,12 +128,14 @@ def showCommand(data, conn, username):
 					sendMsg('e-mail-> id: '+str(email.iD)+'. Subject: '+str(email.title), conn)
 
 			if data == 'notread':
-				if (username in email.recipients) and (email.read == 0):
+				if (username in email.recipients) and (email.read == 0)and not isread(email.iD):
 					sendMsg('e-mail-> id: '+str(email.iD)+'. Subject: '+str(email.title), conn)
 
 			if data.isdigit(): # mostra um email baseado no seu id
 				if email.iD == int(data):
-					email.read = 1 # email é marcado como lido
+					#email.read=1 # email é marcado como lido
+					lidos=open('regs/lidos.txt','a+')
+					lidos.write(str(email.iD)+'\n')
 					sendMsg('e-mail-> Sender: '+str(email.sender)+'. Subject: '+str(email.title), conn)
 					sendMsg('e-mail-> Msg: '+str(email.msg), conn)
 
@@ -223,7 +258,10 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 			pass
 
 		if str(data[0]) == "fav": # marca como favorito
-			pass
+			#sendMsg('Digite o id do email que você quer marcar como favorito:',conn)
+			#iD=recvMsg(conn)
+			addFav(data[1])
+			
 
 		if str(data[0]) == "help":
 			helper()
