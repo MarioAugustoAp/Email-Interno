@@ -1,33 +1,36 @@
+import socket, threading, sys
 
-import socket
-import threading
-
+##################################################
+############# CABEÇALHO DA CONEAXO ###############
+##################################################
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 host = "127.0.0.1"
 porta = 8291
+##################################################
 
-s.connect((host, porta))
+try: # tentativa de conexao
+	s.connect((host, porta))
 
-def sendMsg():
-	while True:
-		s.send(input("").encode('utf-8'))
+except ConnectionRefusedError:
+	print("Failed to connect.")
+	sys.exit()
 
-t = threading.Thread(target=sendMsg)
-t.daemon = True
-t.start()
+def sendMsg(): # metodo para enviar msg
+		while True:
+			s.send(input("").encode('utf-8'))
 
-while True:
-	data = s.recv(1024)
-	if not data:
-		break
-	print(data.decode('utf-8'))
-	
-#dados = (s.recv(1024)).decode('utf-8')
-#print(dados)
-#while True:
-#	msg = str(input("input: ")) # envia msg para o servidor
-#	s.send(msg.encode('utf-8'))
+try:
+	# cria uma thread para poder enviar as mensagens ao mesmo tempo que recebe:
+	t = threading.Thread(target=sendMsg)
+	t.daemon = True
+	t.start()
 
-#	if msg == "stahp":
-#		break
+	while True: # recebe e printa as mensagens
+		data = s.recv(1024)
+		if not data:
+			break
+		print(data.decode('utf-8'))
+
+except:
+	print("Server internal error.")

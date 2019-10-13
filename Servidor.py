@@ -23,7 +23,18 @@ class Email:
 		self.fav = 0 # 0 para nao favorito
 		self.date = date.today() # data que foi criado o email, year-month-day
 
-def helper(): # printa funções e funcionalidades
+def helper(conn): # printa funções e funcionalidades
+	sendMsg('\n	System commands:\n',conn)
+	sendMsg('\n	del [id]- Delet an email by id',conn)
+	sendMsg('\n	email - Create an email',conn)
+	sendMsg('\n	fav [id]- Mark an email as favorite',conn)
+	sendMsg('\n	show inbox- Show id and subject of inbox',conn)
+	sendMsg('\n	show [id] - Show an email by id',conn)
+	sendMsg('\n	show fav - Show favorite emails',conn)
+	sendMsg('\n	show notread - Show notread emails',conn)
+	sendMsg('\n	show sent - Show sent emails',conn)
+	sendMsg('\n	exit - Close connection',conn)
+	sendMsg('\n	help - Show commands again\n',conn)
 	pass
 
 def createId(): # gera novo id unico para email
@@ -65,39 +76,101 @@ def createEmail(conn, username): # cria e salva um email. retorna id do mesmo
 	serializedEmail = pickle.dump(email, open("regs/email.txt", "ab")) 
 	return iD
 
+def addFav(iD):
+	arq = open("regs/fav.txt", "a+")
+	if not isfav(iD):
+		arq.write(str(iD)+'\n')
+		return True
+	return True
+
+def isfav(iD):
+	if os.path.exists("regs/fav.txt"):
+		arq = open("regs/fav.txt", "r")
+		lines = arq.readlines()
+		for line in lines:
+			if str(line) == str(str(iD)+'\n'):
+				return True
+	return False
+
+def isread(emailID):
+	arq =open("regs/lidos.txt",'r')
+	lines = arq.readlines()
+
+	for line in lines:
+		if str(line) == str(str(emailID)+'\n'):
+			return True
+	return False
+	pass
+
 def showCommand(data, conn, username):
-	#show inbox, show notread, show fav, show draft, show sent, show id
-	arq = open("regs/email.txt", "rb")
+	#show inbox, show notread, show fav, show sent, show [id]
+	arq = open("regs/email.txt", "rb+")
 	try:
-		while True:
+		while True: # itera todos os emails 
 			email = pickle.load(arq) # des-serializa o objeto email
 			if data == 'inbox': # mostra a caixa de entrada
-				if username in email.recipients:
+				if username in email.recipients: # checa se um email é destinado ao usuario atual
 					sendMsg('e-mail-> id: '+str(email.iD)+'. Subject: '+str(email.title), conn)
 
 			if data == 'fav': # mostra os emails favoritos
-				if (email.fav == 1) and (username in email.recipients):
+				if (username in email.recipients) and isfav(email.iD):
 					sendMsg('e-mail-> id: '+str(email.iD)+'. Subject: '+str(email.title), conn)
 
 			if data == 'sent': # mostra os emails enviados
-				if (email.recipients) and (email.sender == username):
+				if (email.recipients) and (email.sender == username): # checa se o email foi enviado pelo usuario atual
 					sendMsg('e-mail-> id: '+str(email.iD)+'. Subject: '+str(email.title), conn)
 
-			if data == 'notread':
-				if (username in email.recipients) and (email.read == 0):
+			if data == 'notread': # mostra os emails nao lidos
+				if (username in email.recipients) and (email.read == 0) and (not isread(email.iD)):
 					sendMsg('e-mail-> id: '+str(email.iD)+'. Subject: '+str(email.title), conn)
 
 			if data.isdigit(): # mostra um email baseado no seu id
-				if email.iD == int(data):
-					email.read = 1 # email é marcado como lido
+				if email.iD == int(data) and ((username in email.recipients) or (email.sender == username)): # checa o id de acordo, checa se foi enviado ou recebido pelo usuario atual
+					lidos=open('regs/lidos.txt','a+')
+					lidos.write(str(email.iD)+'\n')
+					lidos.close()
 					sendMsg('e-mail-> Sender: '+str(email.sender)+'. Subject: '+str(email.title), conn)
 					sendMsg('e-mail-> Msg: '+str(email.msg), conn)
 
 	except EOFError:
 		pass
-	
+	arq.close()
 
-def login(): # faz o login do cliente
+def login(name,password,conn): # faz o login do cliente
+
+	if not uniqueValue(name,'username'):#se encontrar usuario, ve se senha eh compativel
+		resultado=compareNamepass(name,password)
+		if resultado:
+			sendMsg("Welcome, "+name,conn)
+			return True
+		else :
+			sendMsg("Username or password wrong.",conn)
+			return False
+	else :
+		sendMsg("Username not find.",conn)
+		return False	
+	pass
+
+def compareNamepass(username,password):#ve se nome corresponde a senha
+	i=0
+	arq = open("regs/username.txt", "r")
+	lines = arq.readlines()
+
+	for line in lines:
+		i=i+1
+		if str(line) == str(username+'\n'):
+			break
+	j=0
+	arq = open("regs/passw.txt", "r")
+	lines = arq.readlines()
+	for line in lines:
+		j=j+1
+		if j == i:
+			if str(line) == str(password+'\n'):
+				return True
+			if str(line) != str(password+'\n'):
+				return False
+	return False
 	pass
 
 def register(username, passw): # registra o cliente
@@ -117,19 +190,20 @@ def sendMsg(text, conn): # envia mensagem
 def recvMsg(conn): # recebe mensagem
 	return (conn.recv(1024)).decode('utf-8')
 
-
 def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
-	sendMsg("\nWelcome user.\n", conn)
 	username = ""
-
 	########################### LOGIN #################################
 	while True: # só sairá desse looping se o usuário digitar 1 ou 2
 		sendMsg("\nType 1 to login\nType 2 to register\n", conn)
 		data = recvMsg(conn)
 
 		if data == '1': # fazendo o login do cliente
-			login()
-			break
+			sendMsg("Enter your username: ", conn)
+			username = recvMsg(conn)
+			sendMsg("Enter your password: ", conn)
+			passw = recvMsg(conn)
+			if login(username, passw, conn):
+				break
 
 		if data == '2': # fazendo o registro do cliente
 			sendMsg("Enter a username: ", conn)
@@ -140,13 +214,16 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 			if not register(username, passw):
 				sendMsg("Username already in use", conn)
 				continue
-			break
+
+			sendMsg("Cadastro feito!",conn)
+			if login(username, passw, conn):
+				break
 			
 		else : # se nao receber 1 ou 2, reportar erro
 			sendMsg("Error: Invalid command.", conn)
     ###################################################################
 	
-	helper() # printa os comandos pro cliente
+	helper(conn) # printa os comandos pro cliente
 
     ################ TRATAMENTO DOS COMANDOS DO CLIENTE ###############
 	while True:
@@ -165,16 +242,16 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 			except:
 				sendMsg("\nError. Could not create E-mail.", conn)
 
-		if str(data[0]) == "del": # deleta email
-			pass
-
 		if str(data[0]) == "fav": # marca como favorito
-			pass
+
+			addFav(data[1])
 
 		if str(data[0]) == "help":
-			helper()
+
+			helper(conn)
 
 		if str(data[0]) == "exit": # para o cliente sair
+
 			sendMsg("Bye o/.", conn)
 			break
 
@@ -182,26 +259,19 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 	###################################################################	
 		
 
-
 ##################################
 ###### CRIANDO AS CONEXOES #######
 ##################################
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-host = "" 
+host = "" # rede local
 porta = 8291
 
 s.bind((host,porta)) # ativando, dexando o socket em escuta
 s.listen(5) # maximo de numero de conexoes suportada
 
 while True: # laco infinito pro servidor fica sempre na escuta
-	conexao, endereco = s.accept()
+	conexao, endereco = s.accept() # aceita um novo cliente
 	print("Conectado com ", endereco)
-	start_new_thread(clientthread, (conexao,))
-
-	
-
-	
-
-
+	start_new_thread(clientthread, (conexao,)) # cria uma thread para esse cliente
