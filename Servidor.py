@@ -24,7 +24,15 @@ class Email:
 		self.fav = 0 # 0 para nao favorito
 		self.date = date.today() # data que foi criado o email, year-month-day
 
-def helper(): # printa funções e funcionalidades
+def helper(conn): # printa funções e funcionalidades
+
+	sendMsg('\n	del - Deleta um email',conn)
+	sendMsg('\n	email - Cria e envia um email',conn)
+	sendMsg('\n	exit - Sai do programa',conn)
+	sendMsg('\n	fav - marca um email como favorito',conn)
+	sendMsg('\n	help - Mostra este manual',conn)
+	sendMsg('\n	show - Exibe os emails',conn)
+
 	pass
 
 def createId(): # gera novo id unico para email
@@ -46,20 +54,22 @@ def uniqueValue(var, file): # verifica se um valor é unico(id de mail ou userna
 			return False
 	return True
 
+
 def createEmail(conn, username): # cria e salva um email. retorna id do mesmo
-	sendMsg("Type Subject: ", conn)
+	sendMsg("Type the subject: ", conn)
 	title = recvMsg(conn)
-	sendMsg("Type Message: ", conn)
+	sendMsg("Type the message: ", conn)
 	msg = recvMsg(conn)
 	iD = createId()
 	email = Email(iD, title, msg, username)
-	serializedEmail = pickle.dumps(email) # para salvar o email em um arq usei picke para serializar o objeto
-	arq = open("regs/email.txt", "ab")
-	sendMsg("Type recipients: ",conn)
-	email.recipients=recvMsg(conn)
-	arq.write(serializedEmail+b"\n")
-	arq.close()
-	return iD
+
+	while True:
+		sendMsg("Send to:", conn)
+		recipient = recvMsg(conn)
+		(email.recipients).append(recipient)
+		sendMsg("Someone more? (y/n): ", conn)
+		if recvMsg(conn) == 'n':
+			break
 
 
 def login(name,password,conn): # faz o login do cliente
@@ -155,7 +165,7 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 		else : # se nao receber 1 ou 2, reportar erro
 			sendMsg("Error: Invalid command.", conn)
 
-	helper() # printa os comandos pro cliente
+	helper(conn) # printa os comandos pro cliente
 
     # laço que receberá os COMANDOS do cliente
 
@@ -182,7 +192,11 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 			pass
 
 		if str(data[0]) == "help":
-			helper()
+			helper(conn)
+
+		if str(data[0]) == "exit":
+			sendMsg('\nBye',conn)
+			break
  
 		#if data == "show draft": # rascunhos: quando se cria um email e nao envia para ngm
 
@@ -209,6 +223,3 @@ while True: # laco infinito pro servidor fica sempre na escuta
 	print("Conectado com ", endereco)
 	start_new_thread(clientthread, (conexao,))
 	
-
-	
-
