@@ -55,6 +55,8 @@ def createEmail(conn, username): # cria e salva um email. retorna id do mesmo
 	email = Email(iD, title, msg, username)
 	serializedEmail = pickle.dumps(email) # para salvar o email em um arq usei picke para serializar o objeto
 	arq = open("regs/email.txt", "ab")
+	sendMsg("Type recipients: ",conn)
+	email.recipients=recvMsg(conn)
 	arq.write(serializedEmail+b"\n")
 	arq.close()
 	return iD
@@ -66,10 +68,13 @@ def login(name,password,conn): # faz o login do cliente
 		resultado=compareNamepass(name,password)
 		if resultado:
 			sendMsg("Bem vindo, "+name,conn)
+			return True
 		else :
 			sendMsg("Nome ou senha errados.",conn)
+			return False
 	else :
-		sendMsg("Nome de usuário não encontrado.",conn)	
+		sendMsg("Nome de usuário não encontrado.",conn)
+		return False	
 	pass
 
 def compareNamepass(username,password):#ve se nome corresponde a senha
@@ -112,6 +117,8 @@ def sendMsg(text, conn): # envia mensagem
 def recvMsg(conn): # recebe mensagem
 	return (conn.recv(1024)).decode('utf-8')
 
+def send():
+	pass
 
 def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 	sendMsg("\nWelcome user.\n", conn)
@@ -127,8 +134,8 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 			username = recvMsg(conn)
 			sendMsg("Enter your password: ", conn)
 			passw = recvMsg(conn)
-			login(username, passw, conn)
-			break
+			if login(username, passw, conn):
+				break
 
 
 		if data == '2': # fazendo o registro do cliente
@@ -142,8 +149,8 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 				continue
 
 			sendMsg("Cadastro feito!",conn)
-			login(username, passw, conn)
-			break
+			if login(username, passw, conn):
+				break
 			
 		else : # se nao receber 1 ou 2, reportar erro
 			sendMsg("Error: Invalid command.", conn)
@@ -151,6 +158,7 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 	helper() # printa os comandos pro cliente
 
     # laço que receberá os COMANDOS do cliente
+
 	while True:
 		sendMsg("\nWaiting command:", conn)
 		data = (recvMsg(conn)).split() # quebra o comando em uma lista
@@ -158,7 +166,7 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 		if str(data[0]) == "show": # mostra email
 			pass
 		if str(data[0]) == "send": # enviar email
-			pass
+			send()
 		if str(data[0]) == "email": # criar email
 
 			try:
@@ -203,7 +211,4 @@ while True: # laco infinito pro servidor fica sempre na escuta
 	
 
 	
-
-
-
 
