@@ -10,6 +10,8 @@ import socket, os, random, pickle
 from datetime import date
 from _thread import *
 
+maX = 1000 # maximo de emails no sistema
+
 class Email:
 	def __init__(self, iD, title, msg, sender):
 		self.iD = iD
@@ -27,7 +29,7 @@ def helper(): # printa funções e funcionalidades
 def createId(): # gera novo id unico para email
 	iD = 0
 	while True:
-		iD = random.randint(0,1000) # maximo de mil emails no sistema
+		iD = random.randint(0,maX) 
 		if uniqueValue(iD, "id"): # se o id for unico, salva e sai do loop
 			arq = open("regs/id.txt", "a+") # id.txt guarda os ids, serve apenas para checar se um novo id ja existe
 			arq.write(str(iD)+"\n")
@@ -44,18 +46,56 @@ def uniqueValue(var, file): # verifica se um valor é unico(id de mail ou userna
 	return True
 
 def createEmail(conn, username): # cria e salva um email. retorna id do mesmo
-	sendMsg("Type Subject: ", conn)
+	sendMsg("Type the subject: ", conn)
 	title = recvMsg(conn)
-	sendMsg("Type Message: ", conn)
+	sendMsg("Type the message: ", conn)
 	msg = recvMsg(conn)
 	iD = createId()
 	email = Email(iD, title, msg, username)
-	serializedEmail = pickle.dumps(email) # para salvar o email em um arq usei picke para serializar o objeto
-	arq = open("regs/email.txt", "ab")
-	arq.write(serializedEmail+b"\n")
-	arq.close()
+
+	while True:
+		sendMsg("Send to:", conn)
+		recipient = recvMsg(conn)
+		(email.recipients).append(recipient)
+		sendMsg("Someone more? (y/n): ", conn)
+		if recvMsg(conn) == 'n':
+			break
+		
+	# para salvar o objeto email em um arquivo é preciso usar pickle para serializar o objeto em bytes
+	serializedEmail = pickle.dump(email, open("regs/email.txt", "ab")) 
 	return iD
 
+def showCommand(data, conn, username):
+	#show inbox, show notread, show fav, show draft, show sent, show id
+	arq = open("regs/email.txt", "rb")
+	try:
+		while True:
+			email = pickle.load(arq) # des-serializa o objeto email
+			if data == 'inbox': # mostra a caixa de entrada
+				if username in email.recipients:
+					sendMsg('e-mail-> id: '+str(email.iD)+'. Subject: '+str(email.title), conn)
+
+			if data == 'fav': # mostra os emails favoritos
+				if (email.fav == 1) and (username in email.recipients):
+					sendMsg('e-mail-> id: '+str(email.iD)+'. Subject: '+str(email.title), conn)
+
+			if data == 'sent': # mostra os emails enviados
+				if (email.recipients) and (email.sender == username):
+					sendMsg('e-mail-> id: '+str(email.iD)+'. Subject: '+str(email.title), conn)
+
+			if data == 'notread':
+				if (username in email.recipients) and (email.read == 0):
+					sendMsg('e-mail-> id: '+str(email.iD)+'. Subject: '+str(email.title), conn)
+
+			if data.isdigit(): # mostra um email baseado no seu id
+				if email.iD == int(data):
+					email.read = 1 # email é marcado como lido
+					sendMsg('e-mail-> Sender: '+str(email.sender)+'. Subject: '+str(email.title), conn)
+					sendMsg('e-mail-> Msg: '+str(email.msg), conn)
+
+	except EOFError:
+		pass
+	
 
 def login(): # faz o login do cliente
 	pass
@@ -82,9 +122,9 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 	sendMsg("\nWelcome user.\n", conn)
 	username = ""
 
-	# laço para o cliente LOGAR
+	########################### LOGIN #################################
 	while True: # só sairá desse looping se o usuário digitar 1 ou 2
-		sendMsg("\nType 1 to login\nType 2 to register", conn)
+		sendMsg("\nType 1 to login\nType 2 to register\n", conn)
 		data = recvMsg(conn)
 
 		if data == '1': # fazendo o login do cliente
@@ -104,19 +144,20 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 			
 		else : # se nao receber 1 ou 2, reportar erro
 			sendMsg("Error: Invalid command.", conn)
-
+    ###################################################################
+	
 	helper() # printa os comandos pro cliente
 
-    # laço que receberá os COMANDOS do cliente
+    ################ TRATAMENTO DOS COMANDOS DO CLIENTE ###############
 	while True:
-		sendMsg("Waiting command:", conn)
+		sendMsg("\nWaiting command:", conn)
 		data = (recvMsg(conn)).split() # quebra o comando em uma lista
 
 		if str(data[0]) == "show": # mostra email
-			pass
-		if str(data[0]) == "send": # enviar email
-			pass
-		if str(data[0]) == "email": # criar email
+			
+			showCommand(str(data[1]), conn, username)
+
+		if str(data[0]) == "email": # cria email
 
 			try:
 				iD = createEmail(conn, username)
@@ -124,22 +165,23 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 			except:
 				sendMsg("\nError. Could not create E-mail.", conn)
 
-		if str(data[0]) == "del": # deletar email
+		if str(data[0]) == "del": # deleta email
 			pass
 
-		if str(data[0]) == "fav": # marcar como favorito
+		if str(data[0]) == "fav": # marca como favorito
 			pass
 
 		if str(data[0]) == "help":
 			helper()
- 
-		#if data == "show draft": # rascunhos: quando se cria um email e nao envia para ngm
 
-		
-		
-		print(data)
+		if str(data[0]) == "exit": # para o cliente sair
+			sendMsg("Bye o/.", conn)
+			break
 
 	conn.close()
+	###################################################################	
+		
+
 
 ##################################
 ###### CRIANDO AS CONEXOES #######
@@ -157,6 +199,7 @@ while True: # laco infinito pro servidor fica sempre na escuta
 	conexao, endereco = s.accept()
 	print("Conectado com ", endereco)
 	start_new_thread(clientthread, (conexao,))
+
 	
 
 	

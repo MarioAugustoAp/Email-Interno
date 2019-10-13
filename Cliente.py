@@ -19,9 +19,10 @@ t.start()
 
 while True:
 	data = s.recv(1024)
-	print(data.decode('utf-8'))
 	if not data:
 		break
+	print(data.decode('utf-8'))
+	
 #dados = (s.recv(1024)).decode('utf-8')
 #print(dados)
 #while True:
