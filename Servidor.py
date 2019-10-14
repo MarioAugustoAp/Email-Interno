@@ -206,7 +206,7 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 				break
 
 		if data == '2': # fazendo o registro do cliente
-			sendMsg("Enter a username: ", conn)
+			sendMsg("Enter an username: ", conn)
 			username = recvMsg(conn)
 			sendMsg("Enter a password: ", conn)
 			passw = recvMsg(conn)
@@ -215,7 +215,7 @@ def clientthread(conn): # quando cliente se conecta, essa thread é iniciada
 				sendMsg("Username already in use", conn)
 				continue
 
-			sendMsg("Cadastro feito!",conn)
+			sendMsg("Register done.",conn)
 			if login(username, passw, conn):
 				break
 			
